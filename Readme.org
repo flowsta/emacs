@@ -1,0 +1,322 @@
+#+CATEGORY: manual, emacs, lisp, conf, github
+#+TAGS: babel, elpy, erc, latex, org-html5presentation, markdown, reftex, melpa, reveal, sparql, web-mode, xetex, zotelo
+#+DESCRIPTION: Configuración de Emacs, se agradecen comentarios al respecto.
+#+TITLE: Mi configuración de Emacs
+#+DATE: [2016-05-25 mié 10:30]
+#+AUTHOR: Adolfo Antón Bravo
+#+EMAIL: adanton@ucm.es
+#+OPTIONS: todo:nil pri:nil tags:nil ^:nil 
+
+#+OPTIONS: reveal_center:t reveal_progress:t reveal_history:nil reveal_control:t
+#+OPTIONS: reveal_mathjax:t reveal_rolling_links:t reveal_keyboard:t reveal_overview:t num:nil
+#+OPTIONS: reveal_width:1200 reveal_height:800
+#+OPTIONS: toc:nil
+#+REVEAL_MARGIN: 0.1
+#+REVEAL_MIN_SCALE: 0.5
+#+REVEAL_MAX_SCALE: 2.5
+#+REVEAL_TRANS: linear
+#+REVEAL_THEME: sky
+#+REVEAL_HLEVEL: 2
+#+REVEAL_HEAD_PREAMBLE: <meta name="description" content="Org-Reveal Introduction.">
+#+REVEAL_POSTAMBLE: <p> Creado por adolflow. </p>
+#+REVEAL_PLUGINS: (highlight markdown notes)
+#+REVEAL_EXTRA_CSS: file:///home/flow/Documentos/software/reveal.js/css/reveal.css
+#+REVEAL_ROOT: file:///home/flow/Documentos/software/reveal.js/
+
+Algo de mi configuración de Emacs, por orden alfabético
+
+* Babel
+
+Se puede ejecutar directamente el código en org-mode si configuramos [[http://orgmode.org/worg/org-contrib/babel/]]
+
+#+BEGIN_SRC lisp
+  ;;(acons 'sh 't org-babel-load-languages)
+
+  ;; Babel
+
+  ;; http://stackoverflow.com/questions/15773354/indent-code-in-org-babel-src-blocks
+  (setq org-src-tab-acts-natively t)
+
+  ;; http://stackoverflow.com/questions/10642888/syntax-highlighting-within-begin-src-block-in-emacs-orgmode-not-working
+  (setq org-src-fontify-natively t)
+
+  ;; esto lo tenía de antes
+  ;;(require 'calfw)
+  (org-babel-do-load-languages
+        'org-babel-load-languages
+        '((emacs-lisp . t)
+          (R . t)
+          (sh . t)
+          (python . t)
+          (ruby . t)
+          (sparql . t)
+          ))
+
+  ;; http://stackoverflow.com/questions/4711179/auto-expanding-blocks-of-comments-in-emacs
+
+  (defun refill-when-in-comment ()
+    (interactive)
+    (let ((curr-face (get-char-property (point) 'face)))
+      (if (member "comment" (split-string (prin1-to-string curr-face) "-"))
+          (fill-paragraph t)
+        )
+      )
+    )
+
+  (defun smart-space (arg)
+    (interactive "P")
+    (refill-when-in-comment)
+    (self-insert-command (prefix-numeric-value arg))
+    )
+
+  (global-set-key " " 'smart-space)
+
+
+
+#+END_SRC 
+* elpy
+
+[[https://github.com/jorgenschaefer/elpy/wiki][Elpy]] es el entorno Python en Emacs Lisp:
+
+Primero añadimos a Emacs el paquete en GitHub:
+#+BEGIN_SRC lisp
+;; elpy
+
+;
+(require 'package)
+(add-to-list 'package-archives
+             '("elpy" . "http://jorgenschaefer.github.io/packages/"))
+
+#+END_SRC
+
+Luego corremos en Emacas =M-x package-refresh-contents= para cargar los contenidos del repositorio. Entonces ya podemos añadir /elpy/ con =M-x package-install RET elpy RET=.
+
+A continuación añadimos esto al archivo de configuración de Emacs, =.emacs=:
+
+#+BEGIN_SRC lisp
+
+(package-initialize)
+(elpy-enable)
+
+#+END_SRC
+
+En el lado de Python, debemos instalar:
+
+#+BEGIN_SRC sh
+pip install flake8
+
+#+END_SRC
+
+Y luego tendrás que elegir entre /rope/ o /jedi/:
+
+#+BEGIN_SRC sh
+pip install rope
+pip install jedi
+
+
+#+END_SRC
+
+#+RESULTS:
+
+* erc
+
+[[https://www.emacswiki.org/emacs/ERC][ERC]] es un cliente este cliente de IRC.
+#+BEGIN_SRC lisp
+(require 'erc)
+
+
+#+END_SRC
+
+* Latex
+
+Soporte para [[https://www.emacswiki.org/emacs/LaTeX][LaTeX]] en Emacs. Fundamental.
+
+#+BEGIN_SRC lisp
+;; LaTeX
+
+(require 'ox-latex)
+(add-to-list 'load-path "~/.emacs.d/elisp")
+(load-library "latex-templates")
+;; wrap código fuente
+;(add-to-list 'org-latex-packages-alist '("" "minted"))
+;(setq org-latex-listings 'minted)
+;
+;(setq org-latex-pdf-process
+;     '("pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+;        "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+;        "pdflatex -shell-escape -interaction nonstopmode -output-directory %o %f")
+
+(setq org-export-latex-listings t)
+(add-to-list 'org-latex-packages-alist '("" "listings"))
+(add-to-list 'org-latex-packages-alist '("" "color"))
+
+
+#+END_SRC
+* org-html5presentation
+
+Presentaciones HTML5 con org-mode, una alternativa a Reveal.
+#+BEGIN_SRC lisp
+;; org-html5presentation
+(add-to-list 'load-path "~/ruta/org-html5presentation.el/")
+(require 'ox-html5presentation)
+
+
+#+END_SRC
+
+* Markdown
+
+Aunque org-mode es maravilloso, hay que prestar atencióna Markdown.
+#+BEGIN_SRC lisp
+;; Markdown
+(eval-after-load "org"
+  '(require 'ox-md nil t))
+
+
+#+END_SRC
+* RefTex
+
+Gestión de bibliografía en Emacs
+
+#+BEGIN_SRC lisp
+;; reftex
+
+(defun org-mode-reftex-setup ()
+(load-library "reftex")
+(and (buffer-file-name)
+(file-exists-p (buffer-file-name))
+(reftex-parse-all))
+(define-key org-mode-map (kbd "C-c )") 'reftex-citation)
+)
+(add-hook 'org-mode-hook 'org-mode-reftex-setup)
+(setq org-latex-to-pdf-process (list "latexmk -pdf -bibtex %f"))
+(setq org-latex-pdf-process '("latexmk -pdflatex='pdflatex -interaction nonstopmode' -pdf -bibtex -f %f"))
+(setq reftex-default-bibliography
+      (quote
+       ("~/Documentos/doctorado/tesis/bibliografia.bib")
+))
+(setq reftex-use-external-file-finders t)
+(setq reftex-external-file-finders
+      '(("tex" . "kpsewhich -format=.tex %f")
+        ("bib" . "kpsewhich -format=.bib %f")))
+
+
+#+END_SRC
+* Melpa
+
+[[https://melpa.org/#/][Melpa]] responde a /Milkypostman’s Emacs Lisp Package Archive/, un gestor de paquetes para Emacs Lisp con las siguientes características:
+- Paquetes actualizados en sus propios servidores.
+- Se instalan con el paquete /package.el/, no se necesitan herramientas de control de versiones locales.
+- Verificados, no los encontrarás obsoletos ni con otro nombre ni distintos.
+- Permite actualizaciones automáticas.
+- Una forma estándar de acceso
+- Extensible, puedes crear tu propia receta en github y Melpa creará el paquete.
+
+#+BEGIN_SRC lisp
+;; melpa
+
+(setq package-archives
+      '(("gnu" . "http://elpa.gnu.org/packages/")
+        ("melpa" . "http://melpa.milkbox.net/packages/")))
+
+
+
+#+END_SRC
+* Reveal
+
+La maravillosa herramienta para creación de presentaciones en [[https://github.com/hakimel/reveal.js][Reveal]] en [[https://github.com/yjwen/org-reveal][org-mode]]:
+
+#+BEGIN_SRC lisp
+;; Reveal
+(require 'ox-reveal)
+
+(setq org-reveal-root "~/emacs.d/elisp/org-reveal")
+
+
+#+END_SRC
+* Sesión
+Configuración que mejora tu sesión.
+** Debug de errores
+
+#+BEGIN_SRC lisp
+(setq max-specpdl-size 1000)  ; default is 1000, reduce the backtrace level
+(setq max-specpdl-size 32000) ; http://stackoverflow.com/questions/30736631/ess-produces-variable-binding-depth-exceeds-max-specpdl-size
+(setq debug-on-error t)    ; now you should get a backtrace
+
+
+#+END_SRC
+
+** Cómo guardar la sesión de Emacs
+
+Leído en [[http://stackoverflow.com/questions/803812/emacs-reopen-buffers-from-last-session-on-startup][Stackoverflow]], cómo guardar la sesión con Emacs, por si te da por cerrar de repente:
+
+#+BEGIN_QUOTE
+You can save the desktop manually with the command M-x desktop-save. You can also enable automatic saving of the desktop when you exit Emacs, and automatic restoration of the last saved desktop when Emacs starts: use the Customization buffer (see Easy Customization) to set desktop-save-mode to t for future sessions, or add this line in your ~/.emacs file:
+#+END_QUOTE
+
+
+#+BEGIN_SRC lisp
+(desktop-save-mode 1)
+
+#+END_SRC 
+
+* Sparql
+
+Quién no ha querido hacer un poco de /SPARQL/ en Emacs? Puedes empezar en [[https://www.emacswiki.org/emacs/SPARQLMode][Emacswiki]] o [[https://github.com/ljos/sparql-mode][GitHub]] y si no lo has hecho antes, configurar Babel:
+
+#+BEGIN_SRC lisp
+;; sparql
+;;
+(add-to-list 'load-path "~/.emacs.d/elisp/sparql-mode/")
+(autoload 'sparql-mode "sparql-mode.el"
+    "Major mode for editing SPARQL files" t)
+(add-to-list 'auto-mode-alist '("\\.sparql$" . sparql-mode))
+(add-to-list 'auto-mode-alist '("\\.rq$" . sparql-mode))
+
+
+#+END_SRC
+
+* Web-mode
+
+[[http://web-mode.org/][Web-mode]] es un modo para editar contenido web. Tienes tantas posibilidades que mejor que lo pruebes
+
+#+BEGIN_SRC lisp
+
+;; web-mode
+(require 'web-mode)
+(add-to-list 'auto-mode-alist '("\\.phtml\\'" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.tpl\\.php\\'" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.[agj]sp\\'" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.as[cp]x\\'" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.erb\\'" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.mustache\\'" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.djhtml\\'" . web-mode))
+(add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode))
+
+
+#+END_SRC
+
+* Xetex
+
+Motor de tipografías /TeX/ que utiliza /Unicode/.
+
+#+BEGIN_SRC lisp
+
+;; xetex
+
+(setq-default TeX-engine 'xetex)
+
+
+#+END_SRC
+
+* Zotelo
+
+[[https://github.com/vspinu/zotelo][Zotelo]] gestiona tus colecciones de Zotero en Emacs
+
+#+BEGIN_SRC lisp
+;; Zotelo
+
+(require 'zotelo)
+(add-hook 'TeX-mode-hook 'zotelo-minor-mode)
+
+
+#+END_SRC
